@@ -34,18 +34,22 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] data = new byte[buffer.remaining()];
             buffer.get(data);
-            //Get red pixels
+            image.close();
+            Log.i(TAG, "Image Height: " + image.getHeight() + " Width: " + image.getWidth() + " Data length: " + data.length);
+
+            //Get the red and green channel
+            // to have more accurate result, we will use a central cropped square of the image
+            int cropSize = Math.min(image.getHeight(), image.getWidth())/2;
+            int cropStartX = (image.getWidth() - cropSize)/2;
+            int cropStartY = (image.getHeight() - cropSize)/2;
+            data = Arrays.copyOfRange(data, cropStartX*4 + cropStartY*image.getWidth()*4, cropStartX*4 + cropStartY*image.getWidth()*4 + cropSize*4*cropSize*4);
             byte[] red = new byte[data.length/4];
+            byte[] green = new byte[data.length/4];
             for(int i=0; i < data.length; i+=4){
                 red[i/4] = data[i];
-            }
-            //Get green pixels
-            byte[] green = new byte[data.length/4];
-            for(int i=1; i < data.length; i+=4){
-                green[i/4] = data[i];
+                green[i/4] = data[i+1];
             }
 
-            image.close();
             double redAvg = processAvg(red);
             double greenAvg = processAvg(green);
 

@@ -1,11 +1,13 @@
 package com.example.cameraheartbeat;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraProvider;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
+import androidx.camera.core.ResolutionInfo;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
@@ -15,6 +17,7 @@ import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Size;
 import android.widget.TextView;
 
 import com.example.cameraheartbeat.cameraUseCases.LuminosityAnalyzer;
@@ -22,9 +25,11 @@ import com.example.cameraheartbeat.cameraUseCases.RedGreenAnalyzer;
 import com.example.cameraheartbeat.myInterface.IRedGreenAVG;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.util.Arrays;
+
 
 public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
-
+    private final int INIT_BUFFER = 100;
     private static final String TAG = "MainActivity";
 
     Camera camera;
@@ -32,6 +37,15 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
     private Preview  preview;
     private PreviewView viewFinder;
 
+    //start time of image analysis
+    long startTime;
+    long endTime;
+
+    //average red and green values
+    double[] redAvg = new double[INIT_BUFFER];
+    double[] greenAvg = new double[INIT_BUFFER];
+    int iterator = 0;
+    int fillBUFFER = INIT_BUFFER;
     private static final int REQUEST_CODE_PERMISSIONS = 10;
     private static final String[] REQUIRED_PERMISSIONS = new String[] {"android.permission.CAMERA", "android.permission.RECORD_AUDIO"};
 
@@ -75,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
 
         cameraProviderFuture .addListener(() -> {
             ProcessCameraProvider cameraProvider;
+            Camera camera;
 
 
             Preview preview = new Preview.Builder().build();
@@ -91,14 +106,16 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
 
             ImageAnalysis red_green_Analyzer = new ImageAnalysis.Builder()
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                    .setTargetResolution(new Size(1080, 1080))
                     .build();
             red_green_Analyzer.setAnalyzer(ContextCompat.getMainExecutor(this), new RedGreenAnalyzer(this));
 
             try {
                 cameraProvider = cameraProviderFuture.get();
                 cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, luminosityAnalyzer, red_green_Analyzer);
-
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, luminosityAnalyzer, red_green_Analyzer);
+                //camera.getCameraControl().startFocusAndMetering(cameraSelector, null);
+                camera.getCameraInfo();
             } catch (Exception e) {
                 Log.e(TAG, "Use case binding failed", e);
             }
@@ -122,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera();
+                startTime = System.currentTimeMillis();
             } else {
                 Log.d(TAG, "Permissions not granted by the user.");
                 finish();
@@ -131,7 +149,24 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
 
     @Override
     public void onRedGreenAVGChanged(double red, double green) {
+        long endTime = System.currentTimeMillis();
         tvRedAvg.setText("RedAvg: "+ red);
         tvGreenAvg.setText("GreenAvg: "+ green);
+        Log.d(TAG, "onRedGreenAVGChanged: " + (endTime - startTime));
+        startTime = endTime;
+        if (fillBUFFER > 0) {
+            redAvg[iterator] = red;
+            greenAvg[iterator] = green;
+            iterator= (iterator+1) % INIT_BUFFER;
+            fillBUFFER--;
+        }
+        else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 15 || red < green * 5) {
+            redAvg[iterator] = red;
+            greenAvg[iterator] = green;
+            iterator= (iterator+1) % INIT_BUFFER;
+        }
+        else
+            Log.i (TAG, "Dito rilevamento battito cardiaco");
     }
+
 }

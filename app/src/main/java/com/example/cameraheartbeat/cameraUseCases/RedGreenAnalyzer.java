@@ -25,7 +25,7 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
         public void analyze(ImageProxy image) {
             // Image analysis code goes here
             // Process incoming image data
-            //On CamreraX Once RGBA_8888 is selected, the output image format will be PixelFormat.RGBA_8888,
+            //On CameraX Once RGBA_8888 is selected, the output image format will be PixelFormat.RGBA_8888,
             // which has only one image plane (R, G, B, A pixel by pixel) with paddings.
             //Source: https://developer.android.com/reference/android/graphics/ImageFormat#RGBA_8888
 
@@ -64,3 +64,4 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
             return Arrays.stream(pixels).average().orElse(0.0);
         }
 }
+

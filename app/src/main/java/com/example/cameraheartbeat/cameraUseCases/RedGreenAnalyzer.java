@@ -35,7 +35,6 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
             byte[] data = new byte[buffer.remaining()];
             buffer.get(data);
             image.close();
-            Log.i(TAG, "Image Height: " + image.getHeight() + " Width: " + image.getWidth() + " Data length: " + data.length);
 
             //Get the red and green channel
             // to have more accurate result, we will use a central cropped square of the image
@@ -55,8 +54,6 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
 
             if (iRedGreenAVG != null)
                 iRedGreenAVG.onRedGreenAVGChanged(redAvg, greenAvg);
-            else
-                Log.i(TAG, "RedAvg: " + redAvg + " GreenAvg: " + greenAvg);
         }
 
         private double processAvg(byte[] data) {

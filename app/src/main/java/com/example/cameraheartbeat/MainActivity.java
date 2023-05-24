@@ -1,13 +1,11 @@
 package com.example.cameraheartbeat;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraProvider;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
-import androidx.camera.core.ResolutionInfo;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
@@ -15,21 +13,36 @@ import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.example.cameraheartbeat.cameraUseCases.LuminosityAnalyzer;
 import com.example.cameraheartbeat.cameraUseCases.RedGreenAnalyzer;
+import com.example.cameraheartbeat.myInterface.IHearthBeat;
+import com.example.cameraheartbeat.myInterface.IPlotBeat;
 import com.example.cameraheartbeat.myInterface.IRedGreenAVG;
+import com.example.cameraheartbeat.utilities.HearthBeatCalculator;
+import com.github.mikephil.charting.animation.Easing;
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.Chart;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 
-public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
-    private final int INIT_BUFFER = 100;
+public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHearthBeat, IPlotBeat {
+    private final int INIT_BUFFER = 50;
     private static final String TAG = "MainActivity";
 
     Camera camera;
@@ -46,10 +59,15 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
     double[] greenAvg = new double[INIT_BUFFER];
     int iterator = 0;
     int fillBUFFER = INIT_BUFFER;
+    boolean isCalculating = false;
+    private HearthBeatCalculator hearthBeatCalculator;
     private static final int REQUEST_CODE_PERMISSIONS = 10;
     private static final String[] REQUIRED_PERMISSIONS = new String[] {"android.permission.CAMERA", "android.permission.RECORD_AUDIO"};
 
-    TextView tvRedAvg, tvGreenAvg;
+    TextView tvRedAvg, tvGreenAvg, tvMessage;
+
+    private LineChart chart;
+    private SeekBar seekBarX, seekBarY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +76,16 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
 
         tvRedAvg = findViewById(R.id.tvRedAvg);
         tvGreenAvg = findViewById(R.id.tvGreenAvg);
+        tvMessage = findViewById(R.id.tvMessage);
+        chart = findViewById(R.id.chart);
+
+        chart.animateX(1200, Easing.EaseInSine);
+        chart.getDescription().setEnabled(false);
+        chart.setDrawGridBackground(false);
+        chart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
+        chart.getXAxis().setGranularity(1f);
+        //chart.getXAxis().setValueFormatter();
+
 
         instantiateCameraPreview();
 
@@ -149,24 +177,61 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG {
 
     @Override
     public void onRedGreenAVGChanged(double red, double green) {
-        long endTime = System.currentTimeMillis();
+        startTime = System.currentTimeMillis();
         tvRedAvg.setText("RedAvg: "+ red);
         tvGreenAvg.setText("GreenAvg: "+ green);
-        Log.d(TAG, "onRedGreenAVGChanged: " + (endTime - startTime));
-        startTime = endTime;
         if (fillBUFFER > 0) {
             redAvg[iterator] = red;
             greenAvg[iterator] = green;
             iterator= (iterator+1) % INIT_BUFFER;
             fillBUFFER--;
         }
-        else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 15 || red < green * 5) {
+        else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 12 || red < green * 5) {
             redAvg[iterator] = red;
             greenAvg[iterator] = green;
             iterator= (iterator+1) % INIT_BUFFER;
+            isCalculating = false;
+            tvMessage.setText("Metti il dito davanti alla fotocamera");
         }
-        else
-            Log.i (TAG, "Dito rilevamento battito cardiaco");
-    }
+        else {
+            if (!isCalculating) {
+                isCalculating = true;
+                tvMessage.setText("Calcolo in corso...");
+                hearthBeatCalculator = new HearthBeatCalculator(this, startTime);
+            }
+            if (hearthBeatCalculator != null) {
+                hearthBeatCalculator.calculateNewHearthBeat(red, green, startTime);
+            }
+            else {
+                throw new NullPointerException("HearthBeatCalculator is null");
+            }
 
+        }
+    }
+    public void onHearthBeatChanged(int hearthBeat) {
+        tvMessage.setText("Battito: " + hearthBeat);
+    }
+    public void plotBeat(double[] redAvg, double[] greenAvg, long[] time) {
+        chart.clear();
+        ArrayList<Entry> valuesRed = new ArrayList<>();
+        ArrayList<Entry> valuesGreen = new ArrayList<>();
+        for ( int i = 0; i < redAvg.length; i++) {
+            valuesRed.add(new Entry(time[i], (float) redAvg[i]));
+            valuesGreen.add(new Entry(time[i], (float) greenAvg[i]));
+        }
+        LineDataSet setRed = new LineDataSet(valuesRed, "Red");
+        setRed.setColor(Color.RED);
+        setRed.setLineWidth(2.5f);
+        LineDataSet setGreen = new LineDataSet(valuesGreen, "Green");
+        setGreen.setColor(Color.GREEN);
+        setGreen.setLineWidth(2.5f);
+        ArrayList<ILineDataSet> dataSets = new ArrayList<>();
+        dataSets.add(setRed);
+        //dataSets.add(setGreen);
+        LineData dataRed = new LineData(dataSets);
+        chart.setData(dataRed);
+        chart.invalidate();
+
+    }
 }
+

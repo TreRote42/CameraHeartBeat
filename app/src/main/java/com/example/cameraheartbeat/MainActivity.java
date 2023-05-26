@@ -25,7 +25,6 @@ import com.example.cameraheartbeat.cameraUseCases.LuminosityAnalyzer;
 import com.example.cameraheartbeat.cameraUseCases.RedGreenAnalyzer;
 import com.example.cameraheartbeat.myInterface.*;
 import com.example.cameraheartbeat.utilities.HeartBeatCalculator;
-import com.example.cameraheartbeat.utilities.MyAccelerometer;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -39,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat, IMyAccelerometer {
+public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat {
     private final int INIT_BUFFER = 50;
     private static final String TAG = "MainActivity";
 
@@ -60,7 +59,6 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
     boolean isCalculating = false;
     boolean userIsStill = true;
     private HeartBeatCalculator heartBeatCalculator;
-    private MyAccelerometer myAccelerometer;
     private Handler handler = new Handler();
     private Runnable resetUserIsStillRunnable = () -> userIsStill = true;
     private static final int REQUEST_CODE_PERMISSIONS = 10;
@@ -197,7 +195,6 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
         }
         else {
             if (!isCalculating && userIsStill) {
-                myAccelerometer.start();
                 isCalculating = true;
                 tvMessage.setText("Calcolo in corso...");
                 heartBeatCalculator = new HeartBeatCalculator(this, startTime);
@@ -235,20 +232,5 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
         chart.setData(dataRed);
         chart.invalidate();
     }
-    @Override
-    public void onNewAccelerometerValuesAvailable(float x, float y, float z) {
-        if (isCalculating) {
-                float magnitude = (float) Math.sqrt(x * x + y * y + z * z);
-                //Change this to adjust accuracy
-                float threshold = 10.0f;
-                //If a sudden movement is detect, set bool to false and wait 2 secs before calculating again
-                if (magnitude > threshold) {
-                    userIsStill = false;
-                    tvMessage.setText("Fermo!");
-                    handler.removeCallbacks(resetUserIsStillRunnable);
-                    handler.postDelayed(resetUserIsStillRunnable, 2000);
-                }
-            }
-        }
     }
 

@@ -1,5 +1,0 @@
-package com.example.cameraheartbeat.myInterface;
-
-public interface IMyAccelerometer {
-    public void onNewAccelerometerValuesAvailable(float x, float y, float z);
-}

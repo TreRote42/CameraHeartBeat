@@ -3,18 +3,18 @@ package com.example.cameraheartbeat.utilities;
 import android.content.Context;
 import android.util.Log;
 
-import com.example.cameraheartbeat.myInterface.IHearthBeat;
+import com.example.cameraheartbeat.myInterface.IHeartBeat;
 import com.example.cameraheartbeat.myInterface.IPlotBeat;
 
 import org.jtransforms.fft.DoubleFFT_1D;
 
 import java.util.Arrays;
 
-public class HearthBeatCalculator {
+public class HeartBeatCalculator {
     private final String TAG = "HearthBeatCalculator";
 
     private final int BUFFER = 200;
-    private IHearthBeat iHearthBeat;
+    private IHeartBeat iHeartBeat;
     private IPlotBeat iPlotBeat;
 
     private double[] redAvg = new double[BUFFER];
@@ -25,8 +25,8 @@ public class HearthBeatCalculator {
     private int lastInserted;
 
 
-    public HearthBeatCalculator(Context context, long startTime) {
-        this.iHearthBeat = (IHearthBeat) context;
+    public HeartBeatCalculator(Context context, long startTime) {
+        this.iHeartBeat = (IHeartBeat) context;
         this.iPlotBeat = (IPlotBeat) context;
         this.startTime = startTime;
         this.inserted = BUFFER;
@@ -34,7 +34,7 @@ public class HearthBeatCalculator {
     }
 
 
-    public void calculateNewHearthBeat(double red, double green, long time) {
+    public void calculateNewHeartBeat(double red, double green, long time) {
         lastInserted = (lastInserted +1)%BUFFER;
         redAvg[lastInserted] = red;
         greenAvg[lastInserted] = green;
@@ -73,7 +73,7 @@ public class HearthBeatCalculator {
             toInsertT = tempT;
         }
         Log.i(TAG, "lastR " + red[BUFFER-1]+" end red:" + end);
-        iHearthBeat.onHearthBeatChanged((int)calculateFFT(red, BUFFER));
+        iHeartBeat.onHeartBeatChanged((int)calculateFFT(red, BUFFER));
         iPlotBeat.plotBeat(red, green, time);
     }
 

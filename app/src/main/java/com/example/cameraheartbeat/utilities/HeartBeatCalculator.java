@@ -51,7 +51,8 @@ public class HeartBeatCalculator {
     }
 
     private void calculateHeartBeat(){
-        int start = lastInserted;
+        int end = lastInserted;
+        int start = (lastInserted+1)%BUFFER;
         double[] red = redAvg.clone();
         double[] green = greenAvg.clone();
         long[] time = timeStamp.clone();
@@ -59,47 +60,81 @@ public class HeartBeatCalculator {
         double greenAvg = Arrays.stream(green).average().orElse(Double.NaN);
         double toInsertR = red[start];
         long toInsertT = time[start];
-        double end = red[Math.abs(start-1)%BUFFER];
         double tempR;
         long tempT;
         int last = start;
         for (int i = 0; i < red.length; i++) {
-            last = (last+(BUFFER-start))%BUFFER;
+            /*last = (last+(BUFFER-start))%BUFFER;
             tempR = red[last];
             tempT = time[last];
             red[last] = toInsertR-redAvg;
             time[last] = toInsertT;
             toInsertR = tempR;
-            toInsertT = tempT;
+            toInsertT = tempT;*/
+            red[i] = red[i]-redAvg;
+            green[i] = green[i]-greenAvg;
         }
-        Log.i(TAG, "lastR " + red[BUFFER-1]+" end red:" + end);
-        iHeartBeat.onHeartBeatChanged((int)calculateFFT(red, BUFFER));
+        iHeartBeat.onHeartBeatChanged((int)calculateFFT(red, BUFFER, time[end]-time[start]));
         iPlotBeat.plotBeat(red, green, time);
     }
 
-    private double calculateFFT(double[] signal, int mNumberOfFFTPoints)
+    private double calculateFFT(double[] signal, int numberOfSample, float sampleRate)
     {
-        double[] magnitude = new double[mNumberOfFFTPoints/2];
-        DoubleFFT_1D fft = new DoubleFFT_1D(mNumberOfFFTPoints);
-        double[] fftData = new double[mNumberOfFFTPoints*2];
+        sampleRate = numberOfSample/(sampleRate/1000);
+        double magintude = 0;
+        double maxFreq = 0;
+        double frequency;
+        double[] output = new double[2 * numberOfSample];
+
+        for (int i = 0; i < output.length; i++)
+            output[i] = 0;
+
+        for (int x = 0; x < numberOfSample; x++) {
+            output[x] = signal[x];
+        }
+
+        DoubleFFT_1D fft = new DoubleFFT_1D(numberOfSample);
+        fft.realForward(output);
+
+        for (int x = 0; x < 2 * numberOfSample; x++) {
+            output[x] = Math.abs(output[x]);
+        }
+
+        for (int p = 35; p < numberOfSample; p++) {
+            if (magintude < output[p]) {
+                magintude = output[p];
+                maxFreq = p;
+
+            }
+        }
+        
+
+        frequency = maxFreq * sampleRate / (2 * numberOfSample);
+        return frequency*60;
+        /*double[] magnitude = new double[numberOfSample/2];
+        DoubleFFT_1D fft = new DoubleFFT_1D(numberOfSample);
+        double[] fftData = new double[numberOfSample*2];
         double max_index=-1;
         double max_magnitude=-1;
-        final float sampleRate=60;
-        double frequency;
-        for (int i=0;i<mNumberOfFFTPoints;i++){
-            //fftData[2 * i] = buffer[i+firstSample];
-            fftData[2 * i] = signal[i];  //da controllare
+        float freqResolution = numberOfSample/(sampleRate/1000);
+        for (int i=0;i<numberOfSample;i++){
+            fftData[2 * i] = signal[i];
             fftData[2 * i + 1] = 0;
-            fft.complexForward(fftData);
         }
-        for(int i = 0; i < mNumberOfFFTPoints/2; i++){
-            magnitude[i]=Math.sqrt((fftData[2*i] * fftData[2*i]) + (fftData[2*i + 1] * fftData[2*i + 1]));
+        fft.realForward(fftData);
+        max_magnitude=fftData[1];
+        max_index=1;
+        for(int i = 0; i < numberOfSample/2; i++){
+            //Log.i(TAG, "fftData: " + fftData[2*i] + " " + fftData[2*i + 1]);
+            magnitude[i]=fftData[2*i] ;
             if (max_magnitude<magnitude[i]){
                 max_magnitude=magnitude[i];
                 max_index=i;
             }
+            Log.d(TAG, "magnitude: " + magnitude[i] + " " + i);
         }
-        return frequency=sampleRate*(double)max_index/(double)mNumberOfFFTPoints;
+        Log.i(TAG, "max_index: " + max_index);
+        return max_index;*/
     }
 
 

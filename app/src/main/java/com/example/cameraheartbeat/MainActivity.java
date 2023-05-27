@@ -25,6 +25,7 @@ import com.example.cameraheartbeat.cameraUseCases.LuminosityAnalyzer;
 import com.example.cameraheartbeat.cameraUseCases.RedGreenAnalyzer;
 import com.example.cameraheartbeat.myInterface.*;
 import com.example.cameraheartbeat.utilities.HeartBeatCalculator;
+import com.example.cameraheartbeat.utilities.MyAccelerometer;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -38,13 +39,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat {
+public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat, IMyAccelerometer {
     private final int INIT_BUFFER = 50;
     private static final String TAG = "MainActivity";
 
     Camera camera;
     CameraProvider cameraProvider;
-    private Preview  preview;
+    private Preview preview;
     private PreviewView viewFinder;
 
     //start time of image analysis
@@ -59,12 +60,13 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
     boolean isCalculating = false;
     boolean userIsStill = true;
     private HeartBeatCalculator heartBeatCalculator;
-    private Handler handler = new Handler();
+    private MyAccelerometer myAccelerometer;
+    private Handler handler;
     private Runnable resetUserIsStillRunnable = () -> userIsStill = true;
     private static final int REQUEST_CODE_PERMISSIONS = 10;
-    private static final String[] REQUIRED_PERMISSIONS = new String[] {"android.permission.CAMERA", "android.permission.RECORD_AUDIO"};
+    private static final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA"};
 
-    TextView tvRedAvg, tvGreenAvg, tvMessage;
+    TextView tvRedAvg, tvGreenAvg, tvMessage, tvIsStill;
 
     private LineChart chart;
     private SeekBar seekBarX, seekBarY;
@@ -73,10 +75,13 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        myAccelerometer = new MyAccelerometer(this, 1.0f);
+        handler = new Handler();
 
         tvRedAvg = findViewById(R.id.tvRedAvg);
         tvGreenAvg = findViewById(R.id.tvGreenAvg);
         tvMessage = findViewById(R.id.tvMessage);
+        tvIsStill = findViewById(R.id.tvIsStill);
         chart = findViewById(R.id.chart);
 
         chart.animateX(1200, Easing.EaseInSine);
@@ -115,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
 
-        cameraProviderFuture .addListener(() -> {
+        cameraProviderFuture.addListener(() -> {
             ProcessCameraProvider cameraProvider;
             Camera camera;
 
@@ -141,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
             try {
                 cameraProvider = cameraProviderFuture.get();
                 cameraProvider.unbindAll();
-                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, luminosityAnalyzer, red_green_Analyzer);
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, red_green_Analyzer);
                 //camera.getCameraControl().startFocusAndMetering(cameraSelector, null);
                 camera.getCameraInfo();
             } catch (Exception e) {
@@ -177,45 +182,44 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
 
     @Override
     public void onRedGreenAVGChanged(double red, double green) {
+        myAccelerometer.start();
         startTime = System.currentTimeMillis();
-        tvRedAvg.setText("RedAvg: "+ red);
-        tvGreenAvg.setText("GreenAvg: "+ green);
+        tvRedAvg.setText("RedAvg: " + red);
+        tvGreenAvg.setText("GreenAvg: " + green);
         if (fillBUFFER > 0) {
             redAvg[iterator] = red;
             greenAvg[iterator] = green;
-            iterator= (iterator+1) % INIT_BUFFER;
+            iterator = (iterator + 1) % INIT_BUFFER;
             fillBUFFER--;
-        }
-        else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 12 || red < green * 5) {
+        } else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 12 || red < green * 5) {
             redAvg[iterator] = red;
             greenAvg[iterator] = green;
-            iterator= (iterator+1) % INIT_BUFFER;
+            iterator = (iterator + 1) % INIT_BUFFER;
             isCalculating = false;
             tvMessage.setText("Metti il dito davanti alla fotocamera");
-        }
-        else {
-            if (!isCalculating && userIsStill) {
+        } else {
+            if (!isCalculating) {
                 isCalculating = true;
                 tvMessage.setText("Calcolo in corso...");
                 heartBeatCalculator = new HeartBeatCalculator(this, startTime);
             }
             if (heartBeatCalculator != null) {
                 heartBeatCalculator.calculateNewHeartBeat(red, green, startTime);
-            }
-            else {
+            } else {
                 throw new NullPointerException("HeartBeatCalculator is null");
             }
-
         }
     }
+
     public void onHeartBeatChanged(int heartBeat) {
         tvMessage.setText("Battito: " + heartBeat);
     }
+
     public void plotBeat(double[] redAvg, double[] greenAvg, long[] time) {
         chart.clear();
         ArrayList<Entry> valuesRed = new ArrayList<>();
         ArrayList<Entry> valuesGreen = new ArrayList<>();
-        for ( int i = 0; i < redAvg.length; i++) {
+        for (int i = 0; i < redAvg.length; i++) {
             valuesRed.add(new Entry(time[i], (float) redAvg[i]));
             valuesGreen.add(new Entry(time[i], (float) greenAvg[i]));
         }
@@ -232,5 +236,19 @@ public class MainActivity extends AppCompatActivity implements IRedGreenAVG, IHe
         chart.setData(dataRed);
         chart.invalidate();
     }
+
+
+    public void onMovementDetected(boolean isStill) {
+        userIsStill = false;
+        if (!isStill) {
+            tvIsStill.setText("");
+            userIsStill = true;
+        }
+        else {
+            tvIsStill.setText("STAI FERMO!");
+        }
+        handler.removeCallbacks(resetUserIsStillRunnable);
+        handler.postDelayed(resetUserIsStillRunnable, 2000);
     }
+}
 

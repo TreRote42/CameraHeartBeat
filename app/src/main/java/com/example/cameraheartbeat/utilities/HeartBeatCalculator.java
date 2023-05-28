@@ -81,9 +81,14 @@ public class HeartBeatCalculator {
     private double calculateFFT(double[] signal, int numberOfSample, float sampleRate)
     {
         sampleRate = numberOfSample/(sampleRate/1000);
-        double magintude = 0;
+        double magnitude = 0;
+        double max2 = 0;
+        double max3 = 0;
+        double max4 = 0;
+        double max5 = 0;
         double maxFreq = 0;
         double frequency;
+        double minFreq = (45.0/60*(2 * numberOfSample)/sampleRate); //45 bpm as minimum
         double[] output = new double[2 * numberOfSample];
 
         for (int i = 0; i < output.length; i++)
@@ -100,15 +105,19 @@ public class HeartBeatCalculator {
             output[x] = Math.abs(output[x]);
         }
 
-        for (int p = 35; p < numberOfSample; p++) {
-            if (magintude < output[p]) {
-                magintude = output[p];
+        for (int p =(int) Math.ceil(minFreq); p < numberOfSample; p++) {
+            if (magnitude < output[p]) {
+                max5 = max4;
+                max4 = max3;
+                max3 = max2;
+                max2 = maxFreq;
+                magnitude = output[p];
                 maxFreq = p;
 
             }
         }
         
-
+        Log.i(TAG, "maxFreq: " + maxFreq + " " + "max2: " + max2 + " " + "max3: " + max3+ " " + "max4: " + max4 + " " + "max5: " + max5);
         frequency = maxFreq * sampleRate / (2 * numberOfSample);
         return frequency*60;
         /*double[] magnitude = new double[numberOfSample/2];

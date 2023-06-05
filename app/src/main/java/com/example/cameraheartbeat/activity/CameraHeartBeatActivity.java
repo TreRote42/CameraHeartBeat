@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.util.Size;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -51,6 +52,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     private Preview preview;
     private PreviewView viewFinder;
 
+
     //start time of image analysis
     long startTime;
     long endTime;
@@ -70,6 +72,8 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     private static final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA"};
 
     TextView tvRedAvg, tvGreenAvg, tvMessage, tvIsStill;
+    ImageButton toggleFlashlight;
+    private boolean isFlashOn = false;
 
     private LineChart chart;
     private SeekBar seekBarX, seekBarY;
@@ -81,6 +85,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         myAccelerometer = new MyAccelerometer(this, 1.0f);
         handler = new Handler();
 
+        toggleFlashlight = findViewById(R.id.toggleFlashlight);
         tvRedAvg = findViewById(R.id.tvRedAvg);
         tvGreenAvg = findViewById(R.id.tvGreenAvg);
         tvMessage = findViewById(R.id.tvMessage);
@@ -153,6 +158,19 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
                 camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, red_green_Analyzer);
                 //camera.getCameraControl().startFocusAndMetering(cameraSelector, null);
                 camera.getCameraInfo();
+                toggleFlashlight.setOnClickListener(v -> {
+                    if (camera.getCameraInfo().hasFlashUnit()) {
+                        if (isFlashOn) {
+                            camera.getCameraControl().enableTorch(false);
+                            isFlashOn = false;
+                            toggleFlashlight.setImageResource(R.drawable.baseline_flashlight_off_24);
+                        } else {
+                            camera.getCameraControl().enableTorch(true);
+                            isFlashOn = true;
+                            toggleFlashlight.setImageResource(R.drawable.baseline_flashlight_on_24);
+                        }
+                    }
+                });
             } catch (Exception e) {
                 Log.e(TAG, "Use case binding failed", e);
             }
@@ -195,7 +213,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
             greenAvg[iterator] = green;
             iterator = (iterator + 1) % INIT_BUFFER;
             fillBUFFER--;
-        } else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 12 || red < green * 5) {
+        } else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 13 || red < green * 8) {
             redAvg[iterator] = red;
             greenAvg[iterator] = green;
             iterator = (iterator + 1) % INIT_BUFFER;

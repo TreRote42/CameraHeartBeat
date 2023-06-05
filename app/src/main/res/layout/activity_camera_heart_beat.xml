@@ -77,16 +77,14 @@
 
     </FrameLayout>
 
-    <ToggleButton
-        android:id="@+id/toggleFlashlite"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="96dp"
-        android:button="@drawable/baseline_flashlight_off_24"
-        android:checked="false"
-        android:clickable="true"
+    <ImageButton
+        android:id="@+id/toggleFlashlight"
+        android:layout_width="60dp"
+        android:layout_height="54dp"
+        android:layout_marginTop="108dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/baseline_flashlight_off_24" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

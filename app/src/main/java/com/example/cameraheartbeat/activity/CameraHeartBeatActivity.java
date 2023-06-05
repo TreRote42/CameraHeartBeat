@@ -42,9 +42,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class CameraHearthBeatActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat, IMyAccelerometer {
+public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat, IMyAccelerometer {
     private final int INIT_BUFFER = 50;
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "CameraHeartBeatActivity";
 
     Camera camera;
     CameraProvider cameraProvider;
@@ -77,7 +77,7 @@ public class CameraHearthBeatActivity extends AppCompatActivity implements IRedG
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_camera_heart_beat);
         myAccelerometer = new MyAccelerometer(this, 1.0f);
         handler = new Handler();
 

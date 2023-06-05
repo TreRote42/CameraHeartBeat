@@ -21,7 +21,7 @@
         android:theme="@style/Theme.CameraHeartBeat"
         tools:targetApi="31">
         <activity
-            android:name=".activity.CameraHearthBeatActivity"
+            android:name=".activity.CameraHeartBeatActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

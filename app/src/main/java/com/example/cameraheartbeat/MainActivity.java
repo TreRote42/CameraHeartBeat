@@ -13,6 +13,9 @@ public class MainActivity extends AppCompatActivity {
 
     private Button cameraButton;
 
+    private static final String TAG = "MainActivity";
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

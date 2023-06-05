@@ -92,6 +92,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         chart.setDrawGridBackground(false);
         chart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
         chart.getXAxis().setGranularity(1f);
+        chart.setNoDataText("");
         //chart.getXAxis().setValueFormatter();
 
 
@@ -228,6 +229,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         }
         LineDataSet setRed = new LineDataSet(valuesRed, "Red");
         setRed.setColor(Color.RED);
+        setRed.setDrawCircles(false);
         setRed.setLineWidth(2.5f);
         LineDataSet setGreen = new LineDataSet(valuesGreen, "Green");
         setGreen.setColor(Color.GREEN);
@@ -236,6 +238,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         dataSets.add(setRed);
         //dataSets.add(setGreen);
         LineData dataRed = new LineData(dataSets);
+        dataRed.setDrawValues(false);
         chart.setData(dataRed);
         chart.invalidate();
     }

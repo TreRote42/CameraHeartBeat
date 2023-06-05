@@ -51,31 +51,19 @@ public class HeartBeatCalculator {
     }
 
     private void calculateHeartBeat(){
-        int end = lastInserted;
         int start = (lastInserted+1)%BUFFER;
+        int end = lastInserted;
         double[] red = redAvg.clone();
         double[] green = greenAvg.clone();
         long[] time = timeStamp.clone();
         double redAvg = Arrays.stream(red).average().orElse(Double.NaN);
         double greenAvg = Arrays.stream(green).average().orElse(Double.NaN);
-        double toInsertR = red[start];
-        long toInsertT = time[start];
-        double tempR;
-        long tempT;
-        int last = start;
         for (int i = 0; i < red.length; i++) {
-            /*last = (last+(BUFFER-start))%BUFFER;
-            tempR = red[last];
-            tempT = time[last];
-            red[last] = toInsertR-redAvg;
-            time[last] = toInsertT;
-            toInsertR = tempR;
-            toInsertT = tempT;*/
-            red[i] = red[i]-redAvg;
-            green[i] = green[i]-greenAvg;
+            red[i] = red[i] - redAvg;
+            green[i] = green[i] - greenAvg;
         }
         iHeartBeat.onHeartBeatChanged((int)calculateFFT(red, BUFFER, time[end]-time[start]));
-        iPlotBeat.plotBeat(red, green, time);
+        iPlotBeat.plotBeat(red, green, time, start);
     }
 
     private double calculateFFT(double[] signal, int numberOfSample, float sampleRate)

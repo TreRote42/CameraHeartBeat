@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat, IMyAccelerometer {
-    private final int INIT_BUFFER = 50;
+    private final int INIT_BUFFER = 40;
     private static final String TAG = "CameraHeartBeatActivity";
 
     Camera camera;
@@ -94,10 +94,14 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
 
         chart.animateX(1200, Easing.EaseInSine);
         chart.getDescription().setEnabled(false);
+        chart.setTouchEnabled(false);
         chart.setDrawGridBackground(false);
-        chart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-        chart.getXAxis().setGranularity(1f);
         chart.setNoDataText("");
+        chart.setKeepScreenOn(true);
+        chart.getLegend().setEnabled(false);
+        chart.getXAxis().setEnabled(false);
+        chart.getAxisLeft().setEnabled(false);
+        chart.getAxisRight().setEnabled(false);
         //chart.getXAxis().setValueFormatter();
 
 
@@ -237,17 +241,21 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         tvMessage.setText("Battito: " + heartBeat);
     }
 
-    public void plotBeat(double[] redAvg, double[] greenAvg, long[] time) {
+    public void plotBeat(double[] redAvg, double[] greenAvg, long[] time, int start) {
+        int toInsert = 0;
+        int lenght = redAvg.length;
         chart.clear();
         ArrayList<Entry> valuesRed = new ArrayList<>();
         ArrayList<Entry> valuesGreen = new ArrayList<>();
-        for (int i = 0; i < redAvg.length; i++) {
-            valuesRed.add(new Entry(time[i], (float) redAvg[i]));
-            valuesGreen.add(new Entry(time[i], (float) greenAvg[i]));
+        for (int i = 0; i < lenght; i++) {
+            toInsert = (start + i) % lenght;
+            valuesRed.add(new Entry(time[toInsert], (float) redAvg[toInsert]));
+            valuesGreen.add(new Entry(time[toInsert], (float) greenAvg[toInsert]));
         }
-        LineDataSet setRed = new LineDataSet(valuesRed, "Red");
+        LineDataSet setRed = new LineDataSet(valuesRed, "BATTITO");
         setRed.setColor(Color.RED);
         setRed.setDrawCircles(false);
+        setRed.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
         setRed.setLineWidth(2.5f);
         LineDataSet setGreen = new LineDataSet(valuesGreen, "Green");
         setGreen.setColor(Color.GREEN);
@@ -258,6 +266,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         LineData dataRed = new LineData(dataSets);
         dataRed.setDrawValues(false);
         chart.setData(dataRed);
+        chart.setDrawGridBackground(false);
         chart.invalidate();
     }
 

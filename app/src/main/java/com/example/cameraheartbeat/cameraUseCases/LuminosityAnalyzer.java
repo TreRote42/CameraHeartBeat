@@ -6,12 +6,19 @@ import android.widget.Toast;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
+import com.example.cameraheartbeat.myInterface.ICameraData;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class LuminosityAnalyzer implements ImageAnalysis.Analyzer {
 
     private static final String TAG = "LuminosityAnalyzer";
+    private static ICameraData iCameraData;
+
+    public LuminosityAnalyzer(ICameraData CameraData) {
+        iCameraData = CameraData;
+    }
 
     @Override
     public void analyze(ImageProxy image) {
@@ -22,11 +29,8 @@ public class LuminosityAnalyzer implements ImageAnalysis.Analyzer {
         ByteBuffer bufferY = image.getPlanes()[0].getBuffer();
         byte[] dataY = new byte[bufferY.remaining()];
         bufferY.get(dataY);
-        double luma = processAvgLuminosity(dataY);
-        Log.i(TAG, "Average luminosity: " + luma);
-
+        iCameraData.onLuxChanged( processAvgLuminosity(dataY));
         image.close();
-
     }
     private double processAvgLuminosity(byte[] data) {
         int[] pixels = new int[data.length];

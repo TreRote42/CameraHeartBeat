@@ -17,17 +17,18 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-import com.example.cameraheartbeat.MainActivity;import com.example.cameraheartbeat.R;
+import com.example.cameraheartbeat.R;
 import com.example.cameraheartbeat.cameraUseCases.LuminosityAnalyzer;
 import com.example.cameraheartbeat.cameraUseCases.RedGreenAnalyzer;
 import com.example.cameraheartbeat.myInterface.IHeartBeat;
 import com.example.cameraheartbeat.myInterface.IMyAccelerometer;
 import com.example.cameraheartbeat.myInterface.IPlotBeat;
-import com.example.cameraheartbeat.myInterface.IRedGreenAVG;
+import com.example.cameraheartbeat.myInterface.ICameraData;
 import com.example.cameraheartbeat.utilities.HeartBeatCalculator;
 import com.example.cameraheartbeat.utilities.MyAccelerometer;
 import com.github.mikephil.charting.animation.Easing;
@@ -41,12 +42,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGreenAVG, IHeartBeat, IPlotBeat, IMyAccelerometer {
+public class CameraHeartBeatActivity extends AppCompatActivity implements ICameraData, IHeartBeat, IPlotBeat, IMyAccelerometer {
     private final int INIT_BUFFER = 40;
     private static final String TAG = "CameraHeartBeatActivity";
 
     Camera camera;
     ProcessCameraProvider cameraProvider;
+    private static Integer[] exposureValue ;
     private Preview preview;
     private PreviewView viewFinder;
 
@@ -100,7 +102,6 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         chart.getXAxis().setEnabled(false);
         chart.getAxisLeft().setEnabled(false);
         chart.getAxisRight().setEnabled(false);
-        //chart.getXAxis().setValueFormatter();
 
 
         instantiateCameraPreview();
@@ -144,7 +145,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
             ImageAnalysis luminosityAnalyzer = new ImageAnalysis.Builder()
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                     .build();
-            luminosityAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(this), new LuminosityAnalyzer());
+            luminosityAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(this), new LuminosityAnalyzer(this));
 
             ImageAnalysis red_green_Analyzer = new ImageAnalysis.Builder()
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -155,9 +156,16 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
             try {
                 cameraProvider = cameraProviderFuture.get();
                 cameraProvider.unbindAll();
-                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, red_green_Analyzer);
-                //camera.getCameraControl().startFocusAndMetering(cameraSelector, null);
-                camera.getCameraInfo();
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview,luminosityAnalyzer, red_green_Analyzer);
+                camera.getCameraControl().cancelFocusAndMetering();
+                Range<Integer> ExposureRange = camera.getCameraInfo().getExposureState().getExposureCompensationRange(); //in my phone it is [-24,24]
+                exposureValue = new Integer[14];
+                double exposureValueLength = ExposureRange.getUpper();
+                for (int i = 14-1; i >= 0; i--) {
+                    exposureValue[i] = (int) (exposureValueLength-(i*(exposureValueLength/8.0)));
+                    Log.d(TAG, "startCamera: exposureValue["+i+"] = "+exposureValue[i]);
+                }
+
                 toggleFlashlight.setOnClickListener(v -> {
                     if (camera.getCameraInfo().hasFlashUnit()) {
                         if (isFlashOn) {
@@ -200,6 +208,40 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
                 finish();
             }
         }
+    }
+
+    @Override
+    public void onLuxChanged(double lux){  //min Lux = 0, max Lux = 255 lux range = 14
+        if (lux < 18)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[0]);
+        else if (lux < 36)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[1]);
+        else if (lux < 54)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[2]);
+        else if (lux < 72)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[3]);
+        else if (lux < 90)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[4]);
+        else if (lux < 108)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[5]);
+        else if (lux < 126)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[6]);
+        else if (lux < 144)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[7]);
+        else if (lux < 162)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[8]);
+        else if (lux < 180)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[9]);
+        else if (lux < 198)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[10]);
+        else if (lux < 216)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[11]);
+        else if (lux < 234)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[12]);
+        else if (lux < 252)
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[13]);
+        else
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue[14]);
     }
 
     @Override

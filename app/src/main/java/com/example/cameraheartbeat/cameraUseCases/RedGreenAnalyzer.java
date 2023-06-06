@@ -1,13 +1,10 @@
 package com.example.cameraheartbeat.cameraUseCases;
 
-import android.util.Log;
-
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
-import com.example.cameraheartbeat.myInterface.IRedGreenAVG;
+import com.example.cameraheartbeat.myInterface.ICameraData;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -15,10 +12,10 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
 
         private static final String TAG = "RedGreenAnalyzer";
 
-        private IRedGreenAVG iRedGreenAVG;
+        private ICameraData iCameraData;
 
-        public RedGreenAnalyzer(IRedGreenAVG iRedGreenAVG){
-            this.iRedGreenAVG = iRedGreenAVG;
+        public RedGreenAnalyzer(ICameraData iCameraData){
+            this.iCameraData = iCameraData;
         }
 
         @Override
@@ -52,8 +49,8 @@ public class RedGreenAnalyzer implements ImageAnalysis.Analyzer{
             double redAvg = processAvg(red);
             double greenAvg = processAvg(green);
 
-            if (iRedGreenAVG != null)
-                iRedGreenAVG.onRedGreenAVGChanged(redAvg, greenAvg);
+            if (iCameraData != null)
+                iCameraData.onRedGreenAVGChanged(redAvg, greenAvg);
         }
 
         private double processAvg(byte[] data) {

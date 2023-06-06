@@ -27,6 +27,7 @@ public class HeartBeatCalculator {
     private long[] timeStamp ;
     private ArrayList<Integer> heartBeatSet ;
     private int avgHeartBeat ;
+    private double lastFreq;
 
 
     private long startTime ;
@@ -45,6 +46,7 @@ public class HeartBeatCalculator {
         this.greenSet = new double[BUFFER];
         this.timeStamp = new long[BUFFER];
         this.isCalculating = true;
+        this.lastFreq = 0;
     }
 
 
@@ -91,7 +93,7 @@ public class HeartBeatCalculator {
         double[] green = greenSet.clone();
         long[] time = timeStamp.clone();
         double redAvg = Arrays.stream(red).average().getAsDouble();
-        double greenAvg = Arrays.stream(green).average().getAsDouble();
+        double greenAvg = Arrays.stream(green).average().getAsDouble()/2; //divided by 2 to get more higher green values
         for (int i = 0; i < BUFFER; i++) {
             red[i] = red[i] - redAvg;
             green[i] = green[i] - greenAvg;
@@ -109,8 +111,6 @@ public class HeartBeatCalculator {
         double magnitude = 0;
         double max2 = 0;
         double max3 = 0;
-        double max4 = 0;
-        double max5 = 0;
         double maxFreq = 0;
         double frequency;
         double minFreq = (45.0/60*(2 * numberOfSample)/sampleRate); //45 bpm as minimum
@@ -132,8 +132,6 @@ public class HeartBeatCalculator {
 
         for (int p =(int) Math.ceil(minFreq); p < numberOfSample; p++) {
             if (magnitude < output[p]) {
-                max5 = max4;
-                max4 = max3;
                 max3 = max2;
                 max2 = maxFreq;
                 magnitude = output[p];
@@ -141,8 +139,8 @@ public class HeartBeatCalculator {
 
             }
         }
-        
-        Log.i(TAG, "maxFreq: " + maxFreq + " " + "max2: " + max2 + " " + "max3: " + max3+ " " + "max4: " + max4 + " " + "max5: " + max5);
+
+        Log.i(TAG, "maxFreq: " + maxFreq + " , mag:"+ output[(int)maxFreq] + "max2: " + max2 + " , mag:"+ output[(int)max2] + "max3: " + max3 + " , mag:"+ output[(int)max3]);
         frequency = maxFreq * sampleRate / (2 * numberOfSample);
         return frequency*60;
     }

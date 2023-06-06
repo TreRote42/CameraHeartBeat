@@ -1,24 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/black"
     tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/introduction_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:lineSpacingExtra="8dp"
+        android:text="Ciao utente, con questa app puoi calcolare il tuo battito cardiaco semplicemente poggiando il dito sulla fotocamera.\n\nCi sono due modalità di utilizzo:\n\n- Puoi controllare che il tuo battito cardiaco a riposo sia regolare\n\n- Puoi controllare che l'intensità di un esercizio sia giusta dopo averne eseguito una sessione, ti diremo se è arrivato il momento di sforzarsi di più.\n\nTi raccomandiamo di stare fermo durante l'utilizzo e di usare il flash in condizioni di scarsa luminosità"
+        android:textSize="18sp"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/white"/>
 
     <Button
         android:id="@+id/bttCamera"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginVertical="40dp"
+        android:layout_below="@id/etAge"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="15dp"
         android:text="Calcola il tuo battito cardiaco"
-        android:textColor="#FFFFFF" />
+        android:textColor="#FFFFFF"
+        android:textAllCaps="false"
+        android:textSize="20sp" />
 
     <EditText
         android:id="@+id/etAge"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter your age" />
+        android:layout_below="@id/introduction_text"
+        android:layout_margin="13dp"
+        android:hint="Enter your age"
+        android:textColorHint="@color/white"
+        android:textColor="@color/white"
+        android:inputType="number"
+        android:textSize="18sp" />
 
 </RelativeLayout>
+

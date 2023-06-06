@@ -1,6 +1,7 @@
 package com.example.cameraheartbeat;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -17,6 +18,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText etAge;
 
     private static final String TAG = "MainActivity";
+    private int savedAge;
+    private SharedPreferences preferences;
+    private SharedPreferences.Editor editor;
 
 
     @Override
@@ -26,7 +30,10 @@ public class MainActivity extends AppCompatActivity {
 
         cameraButton = findViewById(R.id.bttCamera);
         etAge = findViewById(R.id.etAge);
-
+        preferences = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+        editor = preferences.edit();
+        savedAge = preferences.getInt("age", 0);
+        etAge.setText(String.valueOf(savedAge));
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -37,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
                     if(age <= 0 || age > 120) {
                         throw new Exception();
                     }
+                    editor.putInt("age", age);
+                    editor.apply();
                     intent.putExtra("age", age);
                 }
                 catch (Exception e) {

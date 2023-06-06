@@ -70,7 +70,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     private Runnable resetUserIsStillRunnable = () -> userIsStill = true;
     private static final int REQUEST_CODE_PERMISSIONS = 10;
     private static final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA"};
-
+    private int age;
     TextView tvRedAvg, tvGreenAvg, tvMessage, tvIsStill;
     ImageButton toggleFlashlight;
     private boolean isFlashOn = false;
@@ -84,6 +84,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         setContentView(R.layout.activity_camera_heart_beat);
         myAccelerometer = new MyAccelerometer(this, 1.0f);
         handler = new Handler();
+        age = getIntent().getIntExtra("age", 20);
 
         toggleFlashlight = findViewById(R.id.toggleFlashlight);
         tvRedAvg = findViewById(R.id.tvRedAvg);

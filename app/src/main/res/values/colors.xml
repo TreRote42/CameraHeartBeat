@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="material_dynamic_neutral100">#3B8132</color>
+    <color name="material_dynamic_primary100">#FF0000</color>
+    <color name="pink">#FF4681</color>
 </resources>

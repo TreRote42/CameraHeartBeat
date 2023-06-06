@@ -8,21 +8,31 @@ import com.example.cameraheartbeat.myInterface.IPlotBeat;
 
 import org.jtransforms.fft.DoubleFFT_1D;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class HeartBeatCalculator {
     private final String TAG = "HearthBeatCalculator";
 
     private final int BUFFER = 200;
+    private final int AVG_BUFFER = 40;
+    private final int HEARTBEAT_BUFFER = 350;
     private IHeartBeat iHeartBeat;
     private IPlotBeat iPlotBeat;
 
-    private double[] redAvg = new double[BUFFER];
-    private double[] greenAvg = new double[BUFFER];
-    private long[] timeStamp = new long[BUFFER];
+    private double[] redSet;
+    private double redAVG;
+    private double[] greenSet;
+    private double greenAVG;
+    private long[] timeStamp ;
+    private ArrayList<Integer> heartBeatSet ;
+    private int avgHeartBeat ;
+
+
     private long startTime ;
     private int inserted ;
     private int lastInserted;
+    private boolean isCalculating = false;
 
 
     public HeartBeatCalculator(Context context, long startTime) {
@@ -31,18 +41,25 @@ public class HeartBeatCalculator {
         this.startTime = startTime;
         this.inserted = BUFFER;
         this.lastInserted = -1;
+        this.redSet = new double[BUFFER];
+        this.greenSet = new double[BUFFER];
+        this.timeStamp = new long[BUFFER];
+        this.isCalculating = true;
     }
 
 
     public void calculateNewHeartBeat(double red, double green, long time) {
+        if (!isCalculating)
+            return;
         lastInserted = (lastInserted +1)%BUFFER;
-        redAvg[lastInserted] = red;
-        greenAvg[lastInserted] = green;
+        redSet[lastInserted] = red;
+        greenSet[lastInserted] = green;
         timeStamp[lastInserted] = time- this.startTime;
         if (inserted > 0)
             inserted--;
         else if (inserted == 0){
             inserted--;
+            this.heartBeatSet = new ArrayList<>();
             calculateHeartBeat();
         }
         else{
@@ -50,19 +67,39 @@ public class HeartBeatCalculator {
         }
     }
 
+    private void addNewHeartBeat(int heartBeat){
+        if ( heartBeatSet.size() == 0){
+            heartBeatSet.add(heartBeat);
+            avgHeartBeat = heartBeat;
+            return;
+        }
+        else if (heartBeatSet.size() < HEARTBEAT_BUFFER){
+            heartBeatSet.add(heartBeat);
+            avgHeartBeat = (avgHeartBeat+heartBeat)/2; //non facciamo la media pesata, ma la media aritmetica ogni volta in modo da dare più importanza a valori uguali ripetuti, e meno a singloi valori fuori scala
+        }
+        else{
+            avgHeartBeat = (avgHeartBeat+heartBeat)/2;
+            iHeartBeat.finalHeartBeat(avgHeartBeat);
+            isCalculating = false;
+            }
+        }
+
     private void calculateHeartBeat(){
         int start = (lastInserted+1)%BUFFER;
         int end = lastInserted;
-        double[] red = redAvg.clone();
-        double[] green = greenAvg.clone();
+        double[] red = redSet.clone();
+        double[] green = greenSet.clone();
         long[] time = timeStamp.clone();
-        double redAvg = Arrays.stream(red).average().orElse(Double.NaN);
-        double greenAvg = Arrays.stream(green).average().orElse(Double.NaN);
-        for (int i = 0; i < red.length; i++) {
+        double redAvg = Arrays.stream(red).average().getAsDouble();
+        double greenAvg = Arrays.stream(green).average().getAsDouble();
+        for (int i = 0; i < BUFFER; i++) {
             red[i] = red[i] - redAvg;
             green[i] = green[i] - greenAvg;
         }
-        iHeartBeat.onHeartBeatChanged((int)calculateFFT(red, BUFFER, time[end]-time[start]));
+        int newHeartBeat = (int)calculateFFT(red, BUFFER, time[end]-time[start]);
+        Log.i(TAG, "newGreenHeartBeat: " + calculateFFT(green, BUFFER, time[end]-time[start]));
+        iHeartBeat.onHeartBeatChanged(newHeartBeat);
+        addNewHeartBeat(newHeartBeat);
         iPlotBeat.plotBeat(red, green, time, start);
     }
 
@@ -108,32 +145,7 @@ public class HeartBeatCalculator {
         Log.i(TAG, "maxFreq: " + maxFreq + " " + "max2: " + max2 + " " + "max3: " + max3+ " " + "max4: " + max4 + " " + "max5: " + max5);
         frequency = maxFreq * sampleRate / (2 * numberOfSample);
         return frequency*60;
-        /*double[] magnitude = new double[numberOfSample/2];
-        DoubleFFT_1D fft = new DoubleFFT_1D(numberOfSample);
-        double[] fftData = new double[numberOfSample*2];
-        double max_index=-1;
-        double max_magnitude=-1;
-        float freqResolution = numberOfSample/(sampleRate/1000);
-        for (int i=0;i<numberOfSample;i++){
-            fftData[2 * i] = signal[i];
-            fftData[2 * i + 1] = 0;
-        }
-        fft.realForward(fftData);
-        max_magnitude=fftData[1];
-        max_index=1;
-        for(int i = 0; i < numberOfSample/2; i++){
-            //Log.i(TAG, "fftData: " + fftData[2*i] + " " + fftData[2*i + 1]);
-            magnitude[i]=fftData[2*i] ;
-            if (max_magnitude<magnitude[i]){
-                max_magnitude=magnitude[i];
-                max_index=i;
-            }
-            Log.d(TAG, "magnitude: " + magnitude[i] + " " + i);
-        }
-        Log.i(TAG, "max_index: " + max_index);
-        return max_index;*/
     }
-
 
 
 }

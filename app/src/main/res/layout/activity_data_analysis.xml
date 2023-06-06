@@ -1,0 +1,43 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.CameraHeartBeatActivity">
+
+    <TextView
+        android:id="@+id/tvHeartRate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="24sp"
+        android:padding="16dp"
+        android:textColor="#000000" />
+
+        <TextView
+            android:id="@+id/tvExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tvHeartRate"
+            android:layout_margin="16dp"
+            android:text="Dynamic Text"
+            android:visibility="gone" />
+
+    <Button
+        android:id="@+id/bttRestingAnalysis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tvHeartRate"
+        android:text="Button 1"
+        android:layout_margin="16dp"
+        android:visibility="visible"/>
+
+    <Button
+        android:id="@+id/bttExerciseAnalysis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/bttRestingAnalysis"
+        android:text="Button 2"
+        android:layout_margin="16dp"
+        android:visibility="visible"/>
+
+</RelativeLayout>

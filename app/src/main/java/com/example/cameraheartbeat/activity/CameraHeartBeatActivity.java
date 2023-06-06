@@ -2,7 +2,6 @@ package com.example.cameraheartbeat.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
-import androidx.camera.core.CameraProvider;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
@@ -12,6 +11,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -19,7 +19,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.util.Size;
 import android.widget.ImageButton;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.example.cameraheartbeat.R;
@@ -33,7 +32,6 @@ import com.example.cameraheartbeat.utilities.HeartBeatCalculator;
 import com.example.cameraheartbeat.utilities.MyAccelerometer;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -48,7 +46,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     private static final String TAG = "CameraHeartBeatActivity";
 
     Camera camera;
-    CameraProvider cameraProvider;
+    ProcessCameraProvider cameraProvider;
     private Preview preview;
     private PreviewView viewFinder;
 
@@ -58,8 +56,8 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     long endTime;
 
     //average red and green values
-    double[] redAvg = new double[INIT_BUFFER];
-    double[] greenAvg = new double[INIT_BUFFER];
+    double[] redSet = new double[INIT_BUFFER];
+    double[] greenSet = new double[INIT_BUFFER];
     int iterator = 0;
     int fillBUFFER = INIT_BUFFER;
     boolean isCalculating = false;
@@ -76,7 +74,6 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     private boolean isFlashOn = false;
 
     private LineChart chart;
-    private SeekBar seekBarX, seekBarY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,8 +132,6 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
 
         cameraProviderFuture.addListener(() -> {
-            ProcessCameraProvider cameraProvider;
-            Camera camera;
 
 
             Preview preview = new Preview.Builder().build();
@@ -214,13 +209,13 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
         tvRedAvg.setText("RedAvg: " + red);
         tvGreenAvg.setText("GreenAvg: " + green);
         if (fillBUFFER > 0) {
-            redAvg[iterator] = red;
-            greenAvg[iterator] = green;
+            redSet[iterator] = red;
+            greenSet[iterator] = green;
             iterator = (iterator + 1) % INIT_BUFFER;
             fillBUFFER--;
-        } else if (Arrays.stream(redAvg).average().orElse(0.0) < Arrays.stream(greenAvg).average().orElse(0.0) * 13 || red < green * 8) {
-            redAvg[iterator] = red;
-            greenAvg[iterator] = green;
+        } else if (Arrays.stream(redSet).average().orElse(0.0) < Arrays.stream(greenSet).average().orElse(0.0) * 13 || red < green * 8) {
+            redSet[iterator] = red;
+            greenSet[iterator] = green;
             iterator = (iterator + 1) % INIT_BUFFER;
             isCalculating = false;
             tvMessage.setText("Metti il dito davanti alla fotocamera");
@@ -240,6 +235,16 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
 
     public void onHeartBeatChanged(int heartBeat) {
         tvMessage.setText("Battito: " + heartBeat);
+    }
+
+    public void finalHeartBeat(int heartBeat) {
+        myAccelerometer.stop();
+        cameraProvider.unbindAll();
+        Intent intent = new Intent(this, DataAnalysisActivity.class);
+        int age = getIntent().getIntExtra("age", 0);
+        intent.putExtra("age", age);
+        intent.putExtra("heartBeat", heartBeat);
+        startActivity(intent);
     }
 
     public void plotBeat(double[] redAvg, double[] greenAvg, long[] time, int start) {

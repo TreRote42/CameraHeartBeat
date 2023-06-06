@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activity.CameraHeartBeatActivity">
+    tools:context=".activity.DataAnalysisActivity">
 
     <TextView
         android:id="@+id/tvHeartRate"
@@ -11,7 +11,7 @@
         android:gravity="center"
         android:textSize="24sp"
         android:padding="16dp"
-        android:textColor="#000000" />
+        android:textColor="@color/material_dynamic_primary100" />
 
         <TextView
             android:id="@+id/tvExplanation"
@@ -19,7 +19,6 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/tvHeartRate"
             android:layout_margin="16dp"
-            android:text="Dynamic Text"
             android:visibility="gone" />
 
     <Button
@@ -27,7 +26,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/tvHeartRate"
-        android:text="Button 1"
+        android:text="Controlla il tuo battito a riposo"
         android:layout_margin="16dp"
         android:visibility="visible"/>
 
@@ -36,7 +35,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/bttRestingAnalysis"
-        android:text="Button 2"
+        android:text="Controlla il tuo battito dopo l'attività fisica"
         android:layout_margin="16dp"
         android:visibility="visible"/>
 

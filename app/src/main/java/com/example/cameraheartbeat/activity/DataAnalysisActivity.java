@@ -26,9 +26,10 @@ public class DataAnalysisActivity extends AppCompatActivity {
 
         // Get heart rate value from intent
         int heartRate = getIntent().getIntExtra("heartBeat", 0);
+        int age = getIntent().getIntExtra("age", 0);
         tvHeartRate.setText("Heart Rate: " + heartRate);
+        
 
-        // Set button click listeners
             bttRestingAnalysis.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -51,7 +52,22 @@ public class DataAnalysisActivity extends AppCompatActivity {
         bttExerciseAnalysis.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Borg scale
+                int maxHeartRate = 220 - age;
+                int lowTarget = (int) (maxHeartRate * 0.6);
+                int highTarget = (int) (maxHeartRate * 0.8);
+                if(heartRate >= lowTarget && heartRate <= highTarget) {
+                    tvExplanation.setText("L'intensità del tuo esercizio è perfetta!\n DAJE ROMA DAJE YAYAUUUUUUUUUUU!.");
+                    showExplanation();
+                } else if(heartRate < lowTarget) {
+                    tvExplanation.setText("L'intensità del tuo esercizio è troppo bassa.\n SPINGI UOMO!");
+                    showExplanation();
+                } else if(heartRate > highTarget) {
+                    tvExplanation.setText("L'intensità del tuo esercizio è troppo alta.\n MA CHE SEI MATTO AO?");
+                    showExplanation();
+                } else {
+                    tvExplanation.setText("C'è stato un errore nella misurazione del battito cardiaco.");
+                    showExplanation();
+                }
             }
         });
     }

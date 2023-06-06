@@ -21,7 +21,7 @@ import android.util.Size;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-import com.example.cameraheartbeat.R;
+import com.example.cameraheartbeat.MainActivity;import com.example.cameraheartbeat.R;
 import com.example.cameraheartbeat.cameraUseCases.LuminosityAnalyzer;
 import com.example.cameraheartbeat.cameraUseCases.RedGreenAnalyzer;
 import com.example.cameraheartbeat.myInterface.IHeartBeat;
@@ -240,7 +240,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements IRedGr
     public void finalHeartBeat(int heartBeat) {
         myAccelerometer.stop();
         cameraProvider.unbindAll();
-        Intent intent = new Intent(this, DataAnalysisActivity.class);
+        Intent intent = new Intent(CameraHeartBeatActivity.this, DataAnalysisActivity.class);
         int age = getIntent().getIntExtra("age", 0);
         intent.putExtra("age", age);
         intent.putExtra("heartBeat", heartBeat);

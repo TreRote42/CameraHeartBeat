@@ -14,8 +14,8 @@ import java.util.Arrays;
 public class HeartBeatCalculator {
     private final String TAG = "HearthBeatCalculator";
 
-    private final int BUFFER = 200;
-    private final int HEARTBEAT_BUFFER = 400;
+    private final int BUFFER = 180;
+    private final int HEARTBEAT_BUFFER = 450;
     private IHeartBeat iHeartBeat;
     private IPlotBeat iPlotBeat;
 
@@ -90,16 +90,17 @@ public class HeartBeatCalculator {
         double[] red = redSet.clone();
         double[] green = greenSet.clone();
         long[] time = timeStamp.clone();
-        double redAvg = Arrays.stream(red).average().getAsDouble();
-        double greenAvg = Arrays.stream(green).average().getAsDouble()/2; //divided by 2 to get more higher green values
+        double redAvg = Arrays.stream(red).average().orElse(0.0);
+        double greenAvg = Arrays.stream(green).average().orElse(0.0)/2; //divided by 2 to get more higher green values
         for (int i = 0; i < BUFFER; i++) {
             red[i] = red[i] - redAvg;
             green[i] = green[i] - greenAvg;
         }
+        iPlotBeat.plotBeat(red, green, time, start);
+
         double[] redFFT = calculateFFT(red, BUFFER, time[end]-time[start]);
         double[] greenFFT = calculateFFT(green, BUFFER, time[end]-time[start]);
         int newHeartBeat = bestHeartBeat(redFFT, greenFFT);
-        iPlotBeat.plotBeat(red, green, time, start);
         iHeartBeat.onHeartBeatChanged(newHeartBeat);
         addNewHeartBeat(newHeartBeat);
     }
@@ -109,7 +110,6 @@ public class HeartBeatCalculator {
         sampleRate = numberOfSample/(sampleRate/1000);
         double magnitude = 0;
         double max2 = 0;
-        double max3 = 0;
         double maxFreq = 0;
         double minFreq = (45.0/60*(2 * numberOfSample)/sampleRate); //45 bpm as minimum
         double[] samples = new double[2 * numberOfSample];
@@ -131,7 +131,6 @@ public class HeartBeatCalculator {
 
         for (int p =(int) Math.ceil(minFreq); p < numberOfSample; p++) {
             if (magnitude < samples[p]) {
-                max3 = max2;
                 max2 = maxFreq;
                 magnitude = samples[p];
                 maxFreq = p;
@@ -139,7 +138,7 @@ public class HeartBeatCalculator {
             }
         }
 
-        Log.i(TAG, "maxFreq: " + maxFreq + " , mag:"+ samples[(int)maxFreq] + "max2: " + max2 + " , mag:"+ samples[(int)max2] + "max3: " + max3 + " , mag:"+ samples[(int)max3]);
+        Log.i(TAG, "maxFreq: " + maxFreq + " , mag:"+ samples[(int)maxFreq] + "max2: " + max2 + " , mag:"+ samples[(int)max2]);
         double frequency = maxFreq * sampleRate / (2 * numberOfSample);
         double frequency2 = max2 * sampleRate / (2 * numberOfSample);
         output[0] = (int)(frequency*60);
@@ -156,16 +155,16 @@ public class HeartBeatCalculator {
             return (int) heartBeatR[0];
         else if (heartBeatR[2] == heartBeatG[0])
             return (int) heartBeatR[2];
-        else if (heartBeatR[2] == heartBeatG[2] && (heartBeatR[1] < heartBeatR[3] * 1.2 || heartBeatG[1] < heartBeatR[3] * 1.2))
+        else if (heartBeatR[2] == heartBeatG[2] && (heartBeatR[1] < heartBeatR[3] * 1.4 || heartBeatG[1] < heartBeatR[3] * 1.4))
             return (int) heartBeatR[2];
         else if (Math.abs(heartBeatR[0] - heartBeatG[0]) <= 3)
-            return (int) (heartBeatR[0] + heartBeatG[0] / 2);
+            return (int) ((heartBeatR[0] + heartBeatG[0]) / 2);
         else if (Math.abs(heartBeatR[0] - heartBeatG[2]) <= 3)
-            return (int) (heartBeatR[0] + heartBeatG[2] / 2);
+            return (int) ((heartBeatR[0] + heartBeatG[2]) / 2);
         else if (Math.abs(heartBeatR[2] - heartBeatG[2]) <= 3)
-            return (int) (heartBeatR[2] + heartBeatG[2] / 2);
+            return (int) ((heartBeatR[2] + heartBeatG[2]) / 2);
         else if (Math.abs(heartBeatR[2] - heartBeatG[0]) <= 3)
-            return (int) (heartBeatR[2] + heartBeatG[0] / 2);
+            return (int) ((heartBeatR[2] + heartBeatG[0]) / 2);
         else if (heartBeatR[1] > heartBeatG[1] * 15)
             return (int) heartBeatR[0];
         else if (heartBeatG[1] > heartBeatR[1] * 15)

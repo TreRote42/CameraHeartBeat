@@ -43,11 +43,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CameraHeartBeatActivity extends AppCompatActivity implements ICameraData, IHeartBeat, IPlotBeat, IMyAccelerometer {
-    private final int INIT_BUFFER = 40;
+    private final int INIT_BUFFER = 50;
     private static final String TAG = "CameraHeartBeatActivity";
 
-    Camera camera;
-    ProcessCameraProvider cameraProvider;
+    private Camera camera;
+    private ProcessCameraProvider cameraProvider;
+    private ImageAnalysis luminosityAnalyzer;
+    private ImageAnalysis red_green_Analyzer;
+    private CameraSelector cameraSelector;
     private static int exposureValue ;
     private static int exposureMinValueRange;
     private static int exposureMaxValueRange;
@@ -89,7 +92,9 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
 
         toggleFlashlight = findViewById(R.id.toggleFlashlight);
         tvRedAvg = findViewById(R.id.tvRedAvg);
+        tvRedAvg.setText("");  //tv only for debugging
         tvGreenAvg = findViewById(R.id.tvGreenAvg);
+        tvGreenAvg.setText(""); //tv only for debugging
         tvMessage = findViewById(R.id.tvMessage);
         tvIsStill = findViewById(R.id.tvIsStill);
         chart = findViewById(R.id.chart);
@@ -118,6 +123,22 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        cameraProvider.unbindAll();
+        myAccelerometer.stop();
+        chart.clear();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        myAccelerometer.start();
+        instantiateCameraPreview();
+        startCamera();
+    }
+
 
     private void instantiateCameraPreview() {
         preview = new Preview.Builder().build();
@@ -138,19 +159,19 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
         cameraProviderFuture.addListener(() -> {
 
 
-            Preview preview = new Preview.Builder().build();
+            preview = new Preview.Builder().build();
             preview.setSurfaceProvider(viewFinder.getSurfaceProvider());
 
-            CameraSelector cameraSelector = new CameraSelector.Builder()
+            cameraSelector = new CameraSelector.Builder()
                     .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                     .build();
 
-            ImageAnalysis luminosityAnalyzer = new ImageAnalysis.Builder()
+            luminosityAnalyzer = new ImageAnalysis.Builder()
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                     .build();
             luminosityAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(this), new LuminosityAnalyzer(this));
 
-            ImageAnalysis red_green_Analyzer = new ImageAnalysis.Builder()
+            red_green_Analyzer = new ImageAnalysis.Builder()
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .setTargetResolution(new Size(1080, 1080))
                     .build();
@@ -159,8 +180,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
             try {
                 cameraProvider = cameraProviderFuture.get();
                 cameraProvider.unbindAll();
-                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview,luminosityAnalyzer, red_green_Analyzer);
-                camera.getCameraControl().cancelFocusAndMetering();
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, luminosityAnalyzer, red_green_Analyzer);
                 Range<Integer> ExposureRange = camera.getCameraInfo().getExposureState().getExposureCompensationRange(); //in my phone it is [-24,24]
                 exposureValue = camera.getCameraInfo().getExposureState().getExposureCompensationIndex();
                 exposureMinValueRange = ExposureRange.getLower();
@@ -233,11 +253,18 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
     }
 
     @Override
+    public void onLuxNormal() {
+        if(isCalculating) {
+            cameraProvider.unbind(luminosityAnalyzer);
+        }
+    }
+
+    @Override
     public void onRedGreenAVGChanged(double red, double green) {
         myAccelerometer.start();
         startTime = System.currentTimeMillis();
-        tvRedAvg.setText("RedAvg: " + red);
-        tvGreenAvg.setText("GreenAvg: " + green);
+        //tvRedAvg.setText("RedAvg: " + red);
+        //tvGreenAvg.setText("GreenAvg: " + green);
         if (fillBUFFER > 0) {
             redSet[iterator] = red;
             greenSet[iterator] = green;
@@ -249,6 +276,9 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
             iterator = (iterator + 1) % INIT_BUFFER;
             isCalculating = false;
             tvMessage.setText("Metti il dito davanti alla fotocamera");
+            if (! cameraProvider.isBound(luminosityAnalyzer)){
+                cameraProvider.bindToLifecycle(this, cameraSelector, luminosityAnalyzer);
+            }
         } else {
             if (!isCalculating) {
                 isCalculating = true;
@@ -282,20 +312,20 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
         int length = redAvg.length;
         chart.clear();
         ArrayList<Entry> valuesRed = new ArrayList<>();
-        ArrayList<Entry> valuesGreen = new ArrayList<>();
+        //ArrayList<Entry> valuesGreen = new ArrayList<>();
         for (int i = 0; i < length; i++) {
             toInsert = (start + i) % length;
             valuesRed.add(new Entry(time[toInsert], (float) redAvg[toInsert]));
-            valuesGreen.add(new Entry(time[toInsert], (float) greenAvg[toInsert]));
+            //valuesGreen.add(new Entry(time[toInsert], (float) greenAvg[toInsert]));
         }
         LineDataSet setRed = new LineDataSet(valuesRed, "BATTITO");
         setRed.setColor(Color.RED);
         setRed.setDrawCircles(false);
         setRed.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
         setRed.setLineWidth(2.5f);
-        LineDataSet setGreen = new LineDataSet(valuesGreen, "Green");
+        /*LineDataSet setGreen = new LineDataSet(valuesGreen, "Green");
         setGreen.setColor(Color.GREEN);
-        setGreen.setLineWidth(2.5f);
+        setGreen.setLineWidth(2.5f);*/
         ArrayList<ILineDataSet> dataSets = new ArrayList<>();
         dataSets.add(setRed);
         //dataSets.add(setGreen);

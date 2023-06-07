@@ -163,7 +163,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
                 exposureValue = new Integer[14];
                 double exposureValueLength = ExposureRange.getUpper();
                 for (int i = 14-1; i >= 0; i--) {
-                    exposureValue[i] = (int) (exposureValueLength-(i*(exposureValueLength/8.0)));
+                    exposureValue[i] = (int) (exposureValueLength-(i*((exposureValueLength+2)/8.0)));
                     Log.d(TAG, "startCamera: exposureValue["+i+"] = "+exposureValue[i]);
                 }
 
@@ -256,7 +256,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
             greenSet[iterator] = green;
             iterator = (iterator + 1) % INIT_BUFFER;
             fillBUFFER--;
-        } else if (Arrays.stream(redSet).average().orElse(0.0) < Arrays.stream(greenSet).average().orElse(0.0) * 13 || red < green * 8) {
+        } else if (Arrays.stream(redSet).average().orElse(0.0) < Arrays.stream(greenSet).average().orElse(0.0) * 8 || red < green * 3) {
             redSet[iterator] = red;
             greenSet[iterator] = green;
             iterator = (iterator + 1) % INIT_BUFFER;

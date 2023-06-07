@@ -109,6 +109,7 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
         // Request camera permissions
         if (allPermissionsGranted()) {
             startCamera();
+            //finalHeartBeat(60); Uncomment this and comment unbidAll() to debug dataAnalysis faster
         } else {
             ActivityCompat.requestPermissions(
                     this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
@@ -291,12 +292,12 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
 
     public void plotBeat(double[] redAvg, double[] greenAvg, long[] time, int start) {
         int toInsert = 0;
-        int lenght = redAvg.length;
+        int length = redAvg.length;
         chart.clear();
         ArrayList<Entry> valuesRed = new ArrayList<>();
         ArrayList<Entry> valuesGreen = new ArrayList<>();
-        for (int i = 0; i < lenght; i++) {
-            toInsert = (start + i) % lenght;
+        for (int i = 0; i < length; i++) {
+            toInsert = (start + i) % length;
             valuesRed.add(new Entry(time[toInsert], (float) redAvg[toInsert]));
             valuesGreen.add(new Entry(time[toInsert], (float) greenAvg[toInsert]));
         }

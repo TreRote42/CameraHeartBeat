@@ -48,7 +48,9 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
 
     Camera camera;
     ProcessCameraProvider cameraProvider;
-    private static Integer[] exposureValue ;
+    private static int exposureValue ;
+    private static int exposureMinValueRange;
+    private static int exposureMaxValueRange;
     private Preview preview;
     private PreviewView viewFinder;
 
@@ -160,13 +162,9 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
                 camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview,luminosityAnalyzer, red_green_Analyzer);
                 camera.getCameraControl().cancelFocusAndMetering();
                 Range<Integer> ExposureRange = camera.getCameraInfo().getExposureState().getExposureCompensationRange(); //in my phone it is [-24,24]
-                exposureValue = new Integer[14];
-                double exposureValueLength = ExposureRange.getUpper();
-                for (int i = 14-1; i >= 0; i--) {
-                    exposureValue[i] = (int) (exposureValueLength-(i*((exposureValueLength+2)/8.0)));
-                    Log.d(TAG, "startCamera: exposureValue["+i+"] = "+exposureValue[i]);
-                }
-
+                exposureValue = camera.getCameraInfo().getExposureState().getExposureCompensationIndex();
+                exposureMinValueRange = ExposureRange.getLower();
+                exposureMaxValueRange = ExposureRange.getUpper();
                 toggleFlashlight.setOnClickListener(v -> {
                     if (camera.getCameraInfo().hasFlashUnit()) {
                         if (isFlashOn) {
@@ -212,37 +210,26 @@ public class CameraHeartBeatActivity extends AppCompatActivity implements ICamer
     }
 
     @Override
-    public void onLuxChanged(double lux){  //min Lux = 0, max Lux = 255 lux range = 14
-        if (lux < 18)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[0]);
-        else if (lux < 36)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[1]);
-        else if (lux < 54)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[2]);
-        else if (lux < 72)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[3]);
-        else if (lux < 90)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[4]);
-        else if (lux < 108)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[5]);
-        else if (lux < 126)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[6]);
-        else if (lux < 144)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[7]);
-        else if (lux < 162)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[8]);
-        else if (lux < 180)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[9]);
-        else if (lux < 198)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[10]);
-        else if (lux < 216)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[11]);
-        else if (lux < 234)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[12]);
-        else if (lux < 252)
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[13]);
-        else
-            camera.getCameraControl().setExposureCompensationIndex(exposureValue[14]);
+    public void onLuxHigher(){
+        if(exposureValue == exposureMinValueRange){
+            isCalculating = false;
+            tvMessage.setText("Troppo luminoso");
+        }
+        else{
+            exposureValue--;
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue);
+        }
+    }
+    @Override
+    public void onLuxLower(){
+        if(exposureValue == exposureMaxValueRange){
+            isCalculating = false;
+            tvMessage.setText("Troppo buio");
+        }
+        else{
+            exposureValue++;
+            camera.getCameraControl().setExposureCompensationIndex(exposureValue);
+        }
     }
 
     @Override

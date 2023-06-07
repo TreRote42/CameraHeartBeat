@@ -29,7 +29,12 @@ public class LuminosityAnalyzer implements ImageAnalysis.Analyzer {
         ByteBuffer bufferY = image.getPlanes()[0].getBuffer();
         byte[] dataY = new byte[bufferY.remaining()];
         bufferY.get(dataY);
-        iCameraData.onLuxChanged( processAvgLuminosity(dataY));
+        double lux = processAvgLuminosity(dataY);
+        Log.d(TAG, "analyze: lux = " + lux);
+        if (lux > 75)
+            iCameraData.onLuxHigher();
+        if (lux < 45)
+            iCameraData.onLuxLower();
         image.close();
     }
     private double processAvgLuminosity(byte[] data) {
